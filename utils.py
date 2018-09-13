@@ -18,3 +18,5 @@ def trace_agent(agent):
 
 
 
+def get_results(agents):
+    pass

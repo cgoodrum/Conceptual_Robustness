@@ -16,10 +16,6 @@ class Specification(object):
 
     }
 
-    length = {
-        'uniform': test
-    }
-
     def __init__(self, filepath):
         self.filepath = filepath
         self.spec = {}
@@ -175,7 +171,7 @@ class Hill_Agent(Agent):
 
     def __init__(self, **kwargs):
         Agent.__init__(self, **kwargs)
-        self.visited_locs = []
+
 
     def perceive(self):
         perception = self.get_percepts(self.location, self.environment.network)
@@ -184,27 +180,33 @@ class Hill_Agent(Agent):
 
     def interpret(self):
         # Always follow the shortest path
-        min_length = min(self.percept.values())
-        for k, v in self.percept.items():
-            if v == min_length:
-                sel_edge = (k,v)
-                break
+        if self.percept:
+            min_length = min(self.percept.values())
+            for k, v in self.percept.items():
+                if v == min_length:
+                    sel_edge = (k,v)
+                    break
 
-        self.interpretation[self.environment.current_time] = sel_edge
-        return sel_edge
+            self.interpretation[self.environment.current_time] = sel_edge
+            return sel_edge
+        else:
+            self.alive = False
 
         # sel_path, sel_dist = rd.choice(list(self.percept.items()))
 
     def act(self):
         self.history[self.environment.current_time] = self.location
-        decision = self.interpretation[self.environment.current_time]
-        self.location = decision[0][1]
-        self.performance += decision[1]
+        if self.percept:
+            decision = self.interpretation[self.environment.current_time]
+            self.location = decision[0][1]
+            self.performance += decision[1]
+        else:
+            decision = self.location
         return decision
 
 
     def get_percepts(self, location, environment):
-        # Overwrite the base class get_percepts function to update with maverick-based rules
+        # Overwrite the base class get_percepts function to update with hill-agent-based rules
         # For a given location (node) in the environment, return the neighbor paths and associated lengths
         possible_paths = self.get_path_information(location=location, environment=environment)
         return possible_paths
@@ -223,7 +225,18 @@ class Hill_Agent(Agent):
         # Use if agents should be able to see both paths and distances.
         possible_paths = environment.edges(location)
         distances = nx.get_edge_attributes(environment, 'length')
-        location_edges = {k: v for k, v in distances.items() if k in possible_paths}
+        remove_edges = []
+        if self.history:
+            for edge in possible_paths:
+                for visited_node in self.history.values():
+                    if edge[1] == visited_node:
+                        remove_edges.append(edge)
+            possible_paths = [edge for edge in possible_paths if edge not in remove_edges]
+            location_edges = {k:v for k,v in distances.items() if k in possible_paths}
+        else:
+
+            location_edges = {k: v for k, v in distances.items() if k in possible_paths}
+
         return location_edges
 
 
@@ -317,14 +330,17 @@ def main():
         agents = specification.set_agents(environment=environment)
         while environment.current_time <= environment.T:
             for agent_num, agent in agents.items():
-                agent.perceive()
-                agent.interpret()
-                agent.act()
+                if agent.alive:
+                    agent.perceive()
+                    agent.interpret()
+                    agent.act()
+                else:
+                    pass
             environment.tick()
 
         for agent_num, agent in agents.items():
             print("Trial " + str(t), "  ", agent.name, "  ", agent.history.values(), "  ", agent.performance)
-        print("")
+        #print("")
         specification.run()
 
     TSP_Network.draw_network(environment.network)
