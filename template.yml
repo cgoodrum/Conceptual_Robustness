@@ -1,0 +1,35 @@
+---
+settings:
+  save_results: C:\Users\cgoodrum\Documents\Research\Conceptual_Robustness\results.yml
+
+network:
+  load:
+
+  nodes:
+    num_nodes: 10
+
+  edges:
+    num_edges: 10
+    length:
+        type:
+            uniform
+        parameters:
+            lower_bound: 1
+            upper_bound: 100
+
+agents:
+  #mavericks:
+  #  number: 5
+
+  #followers:
+  #  number: 5
+
+  HE_agents:
+    number: 10
+    name: Mav_
+
+time:
+  T: 10
+
+trials:
+  num_runs: 2
